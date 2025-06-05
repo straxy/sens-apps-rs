@@ -1,0 +1,9 @@
+[package]
+name = "hello-smol"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+smol = "2.0.2"
+signal-hook = "0.3.18"
+smol-macros = "0.1.1"
