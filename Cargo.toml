@@ -1,7 +1,10 @@
 [package]
-name = "hello-smol"
-version = "0.1.0"
+name = "sens-apps"
+description = "Sensor reading for custom QEMU memory-mapped, I2C and SPI peripherals, as companion app for MistraSolutions blog"
+repository = "https://github.com/straxy/sens-apps-rs"
+version = "1.0.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0.98"
