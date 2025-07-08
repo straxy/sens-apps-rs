@@ -14,6 +14,9 @@ const DATA_ATTR: &str = "data";
 const INITVAL_ATTR: &str = "initval";
 const FREQUENCY_ATTR: &str = "frequency";
 const INTERRUPT_ATTR: &str = "interrupt";
+const MMSENS_EV: usize = 1;
+const ENABLE: u32 = 1;
+const DISABLE: u32 = 0;
 
 pub(super) struct MMSens {
     sender: Sender<UpdateMessage>,
@@ -40,48 +43,45 @@ impl Sensor for MMSens {
         MMSens::write_attr_u32(INITVAL_ATTR, 0).await?;
 
         // Enable device
-        MMSens::write_attr_u32(ENABLE_ATTR, 1).await?;
+        MMSens::write_attr_u32(ENABLE_ATTR, ENABLE).await?;
 
         // Configure frequency
         MMSens::write_attr_str(FREQUENCY_ATTR, "normal").await?;
 
         // Enable interrupt
-        MMSens::write_attr_u32(ENABLE_INTERRUPT_ATTR, 1).await?;
+        MMSens::write_attr_u32(ENABLE_INTERRUPT_ATTR, ENABLE).await?;
 
         Ok(())
     }
 
     async fn deinit(&mut self) {
         // Disable interrupt
-        let _ = MMSens::write_attr_u32(ENABLE_INTERRUPT_ATTR, 0).await;
+        let _ = MMSens::write_attr_u32(ENABLE_INTERRUPT_ATTR, DISABLE).await;
         // Disable device
-        let _ = MMSens::write_attr_u32(ENABLE_ATTR, 0).await;
+        let _ = MMSens::write_attr_u32(ENABLE_ATTR, DISABLE).await;
     }
 
     async fn run(mut self) {
         let poller = Poller::new().unwrap();
         let file = File::open(Path::new(MMSENS_PATH).join(INTERRUPT_ATTR))
             .await
-            .unwrap();
+            .expect("Could not open interrupt file");
         unsafe {
             poller
-                .add_with_mode(&file, Event::readable(1), polling::PollMode::Edge)
-                .unwrap()
+                .add_with_mode(&file, Event::readable(MMSENS_EV), polling::PollMode::Edge)
+                .expect("Could not add file to poller")
         };
         let mut events = Events::new();
         loop {
             events.clear();
             poller
                 .wait(&mut events, Some(std::time::Duration::from_millis(500)))
-                .unwrap();
+                .expect("Poll failed!");
 
             let mut event = false;
             for ev in events.iter() {
-                match ev.key {
-                    1 => {
-                        event = true;
-                    }
-                    _ => unreachable!(),
+                if ev.key == MMSENS_EV {
+                    event = true;
                 }
             }
             if event {
@@ -92,7 +92,7 @@ impl Sensor for MMSens {
                         value,
                     })
                     .await
-                    .unwrap();
+                    .expect("Failed to send data");
             }
             if self.ctrl_c_receiver.try_recv().is_ok() {
                 println!("MMSens: Ctrl+C received");

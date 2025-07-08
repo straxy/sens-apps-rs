@@ -1,8 +1,7 @@
-use smol_macros::{main, Executor};
-
 pub mod sens;
 
 use sens::Sens;
+use smol_macros::{main, Executor};
 
 main! {
     async fn main(ex: &Executor<'_>) -> anyhow::Result<()> {
